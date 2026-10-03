@@ -50,3 +50,6 @@ After completing the four intake prompts, the chat stays open for unlimited foll
 - Accessibility controls: larger text, high contrast, reduced motion, text-first mode, and optional browser speech synthesis. Text remains the primary mode for Deaf/hard-of-hearing users. These controls are not a WCAG conformance certification.
 - Prominent Schedule online appointment button scrolls to fictional demonstration clinicians. Bookings are local simulations only.
 - References: https://www.w3.org/TR/WCAG22/ ; https://www.w3.org/WAI/media/av/ ; https://developer.mozilla.org/en-US/docs/Web/API/Web_Speech_API
+
+## Voice input update
+The microphone records a local audio copy and attempts speech-to-text using the browser's SpeechRecognition API. Review/edit the transcript and press **Send transcript to consultation** to process it through the same existing chat flow as typed input. Speech recognition support varies by browser, language, and connection; many browsers send speech to their speech recognition provider, so it is NOT guaranteed offline or private. The app does not upload or send raw audio, provide a clinician voice-message inbox, or implement server speech-to-text. Use only fictional demonstration data.

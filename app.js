@@ -57,5 +57,43 @@ let storedPrefs={};try{storedPrefs=JSON.parse(localStorage.getItem('ai_clinic_a1
 prefs.forEach((id,i)=>{const input=$(id);input.checked=!!storedPrefs[id];document.body.classList.toggle(classes[i],input.checked);input.onchange=()=>{document.body.classList.toggle(classes[i],input.checked);storedPrefs[id]=input.checked;localStorage.setItem('ai_clinic_a11y',JSON.stringify(storedPrefs));};});
 $('readPage').onclick=()=>{if(!('speechSynthesis' in window)){$('readPage').textContent='Speech playback unavailable in this browser';return;}speechSynthesis.cancel();const utterance=new SpeechSynthesisUtterance((state.messages||[]).slice(-5).map(m=>m.role+': '+m.message).join('. '));utterance.rate=.85;speechSynthesis.speak(utterance);};$('stopReading').onclick=()=>{if('speechSynthesis'in window)speechSynthesis.cancel()};
 $('scheduleNow').onclick=()=>{$('specialists').scrollIntoView({behavior:'smooth'});const first=$('doctors').querySelector('button');if(first)first.focus({preventScroll:true});};
-let recorder=null,recordedChunks=[],activeStream=null;const mic=$('recordAudio'),recordStatus=$('recordingStatus');
-mic.onclick=async()=>{if(recorder?.state==='recording'){recorder.stop();return;}if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder){recordStatus.textContent='Audio recording is unavailable. Please type your message instead.';return;}try{activeStream=await navigator.mediaDevices.getUserMedia({audio:true});recordedChunks=[];recorder=new MediaRecorder(activeStream);recorder.ondataavailable=e=>{if(e.data.size)recordedChunks.push(e.data)};recorder.onstop=()=>{mic.setAttribute('aria-pressed','false');mic.textContent='🎙';activeStream?.getTracks().forEach(t=>t.stop());const blob=new Blob(recordedChunks,{type:recorder.mimeType||'audio/webm'});if(!blob.size)return;const url=URL.createObjectURL(blob),wrap=document.createElement('div'),audio=document.createElement('audio'),download=document.createElement('a'),discard=document.createElement('button');audio.controls=true;audio.src=url;download.href=url;download.download='AIClinic-demo-recording.'+(blob.type.includes('mp4')?'mp4':'webm');download.textContent='Download recording';discard.textContent='Discard recording';discard.type='button';discard.onclick=()=>{URL.revokeObjectURL(url);wrap.remove();recordStatus.textContent='Recording discarded.'};wrap.append(audio,download,discard);recordStatus.replaceChildren(wrap);};recorder.start();mic.textContent='■ Stop';mic.setAttribute('aria-pressed','true');recordStatus.textContent='Recording locally. Select Stop when finished. Recording is not transcribed, uploaded or sent to a doctor.';}catch(err){recordStatus.textContent='Microphone permission denied or unavailable. You can continue by typing.';}};
+// Voice input: browser speech recognition converts speech to editable text.
+// MediaRecorder keeps a local audio copy. Neither recording nor transcript is uploaded.
+let recorder=null,recordedChunks=[],activeStream=null,recognition=null,recognizedText='',audioUrl=null;
+const mic=$('recordAudio'),recordStatus=$('recordingStatus');
+const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+const voicePanel=document.createElement('div');voicePanel.className='voicePanel';voicePanel.hidden=true;
+voicePanel.innerHTML='<label for="voiceTranscript">Recognized speech (review and edit before sending)</label><textarea id="voiceTranscript" rows="3" placeholder="Your recognized words will appear here. You can correct them before sending."></textarea><div class="voiceActions"><button type="button" id="voiceSend" class="btn sm">Send transcript to consultation ↑</button><button type="button" id="voiceDiscard" class="btn ghost sm">Discard</button></div><p id="voiceNote" role="status"></p>';
+recordStatus.after(voicePanel);
+const transcript=()=>document.getElementById('voiceTranscript');
+document.getElementById('voiceSend').onclick=()=>{const value=transcript().value.trim();if(!value){document.getElementById('voiceNote').textContent='No text to send. Type or dictate your message first.';return;}receive(value);voicePanel.hidden=true;transcript().value='';document.getElementById('voiceNote').textContent='Transcript sent to the consultation. Audio remains local and is not sent.';};
+document.getElementById('voiceDiscard').onclick=()=>{voicePanel.hidden=true;transcript().value='';recognizedText='';if(audioUrl){URL.revokeObjectURL(audioUrl);audioUrl=null;}recordStatus.textContent='Voice input discarded.';};
+mic.onclick=async()=>{
+ if(recorder?.state==='recording'){
+   if(recognition){try{recognition.stop()}catch{}}
+   recorder.stop();return;
+ }
+ if(!navigator.mediaDevices?.getUserMedia||!window.MediaRecorder){recordStatus.textContent='Microphone recording unavailable. Type your message instead.';return;}
+ try{
+  activeStream=await navigator.mediaDevices.getUserMedia({audio:true});recordedChunks=[];recognizedText='';voicePanel.hidden=false;transcript().value='';
+  recorder=new MediaRecorder(activeStream);
+  recorder.ondataavailable=e=>{if(e.data.size)recordedChunks.push(e.data)};
+  recorder.onstop=()=>{
+   mic.setAttribute('aria-pressed','false');mic.textContent='🎙';activeStream?.getTracks().forEach(t=>t.stop());
+   const blob=new Blob(recordedChunks,{type:recorder.mimeType||'audio/webm'});
+   if(!blob.size)return;
+   if(audioUrl)URL.revokeObjectURL(audioUrl);audioUrl=URL.createObjectURL(blob);
+   const wrap=document.createElement('div'),audio=document.createElement('audio'),download=document.createElement('a');
+   audio.controls=true;audio.src=audioUrl;download.href=audioUrl;download.download='AIClinic-demo-recording.'+(blob.type.includes('mp4')?'mp4':'webm');download.textContent='Download local recording';
+   wrap.append(audio,download);recordStatus.replaceChildren(wrap);
+   if(!transcript().value.trim())document.getElementById('voiceNote').textContent='No speech recognized. You can type your words in the transcript box and send them. The audio cannot be sent to a real clinic in this demo.';
+  };
+  if(SpeechRecognition){
+   recognition=new SpeechRecognition();recognition.lang=$('language').value==='kk'?'kk-KZ':'en-US';recognition.continuous=true;recognition.interimResults=true;
+   recognition.onresult=e=>{let interim='';for(let i=e.resultIndex;i<e.results.length;i++){const t=e.results[i][0].transcript;if(e.results[i].isFinal)recognizedText+=t+' ';else interim+=t;}transcript().value=(recognizedText+interim).trim();};
+   recognition.onerror=e=>{document.getElementById('voiceNote').textContent='Speech recognition unavailable ('+e.error+'). Recording still works. Type your message or use a supported browser online.';};
+   try{recognition.start();document.getElementById('voiceNote').textContent='Listening and transcribing. Review your text, stop recording, then select Send transcript.';}catch{document.getElementById('voiceNote').textContent='Speech recognition could not start. Record and type your message instead.';}
+  }else{document.getElementById('voiceNote').textContent='This browser cannot transcribe speech. You can record and replay audio, or type a transcript below.';}
+  recorder.start();mic.textContent='■ Stop';mic.setAttribute('aria-pressed','true');recordStatus.textContent='Recording locally… Stop when finished.';
+ }catch{recordStatus.textContent='Microphone access denied or unavailable. Type your message instead.';voicePanel.hidden=true;}
+};
