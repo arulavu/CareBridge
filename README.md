@@ -42,3 +42,11 @@ Links provide context, not evidence of clinical validation or live API integrati
 
 ## Multi-turn update
 After completing the four intake prompts, the chat stays open for unlimited follow-up questions and additional reported symptoms. A limited reviewed hand-injury educational card provides general first-aid and activity-avoidance information, while unknown concerns abstain. The report incorporates all follow-ups and refreshes on further questions. This is keyword/rule-based guidance, not a conversational LLM, diagnosis or clinically validated triage.
+
+
+## Added demo features
+- Fictional local profile (display name only), NOT actual authentication. No PIN or password is saved. Do not use real data.
+- Microphone recording with playback, discard and download using browser MediaRecorder. No speech-to-text, automatic medical analysis or upload. Browser microphone permission and HTTPS required.
+- Accessibility controls: larger text, high contrast, reduced motion, text-first mode, and optional browser speech synthesis. Text remains the primary mode for Deaf/hard-of-hearing users. These controls are not a WCAG conformance certification.
+- Prominent Schedule online appointment button scrolls to fictional demonstration clinicians. Bookings are local simulations only.
+- References: https://www.w3.org/TR/WCAG22/ ; https://www.w3.org/WAI/media/av/ ; https://developer.mozilla.org/en-US/docs/Web/API/Web_Speech_API
