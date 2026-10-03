@@ -53,3 +53,6 @@ After completing the four intake prompts, the chat stays open for unlimited foll
 
 ## Voice input update
 The microphone records a local audio copy and attempts speech-to-text using the browser's SpeechRecognition API. Review/edit the transcript and press **Send transcript to consultation** to process it through the same existing chat flow as typed input. Speech recognition support varies by browser, language, and connection; many browsers send speech to their speech recognition provider, so it is NOT guaranteed offline or private. The app does not upload or send raw audio, provide a clinician voice-message inbox, or implement server speech-to-text. Use only fictional demonstration data.
+
+## Contextual consultation update
+The intake selects different question sequences for respiratory symptoms, mental wellbeing, routine check-ups, injuries and unknown concerns. After the intake, multiple follow-up messages receive limited topic-specific educational guidance. This is deterministic keyword matching and a curated offline library, not a generative medical model, clinical triage or live retrieval. If a concern is unknown, the app offers consultation preparation rather than fabricated treatment. Emergency keywords trigger escalation text; keyword matching can miss important warning signs. Use fictional data only.
