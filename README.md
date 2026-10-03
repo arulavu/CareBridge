@@ -39,3 +39,6 @@ Deploy: upload the **contents** of this folder to the root of your GitHub Pages 
 - PubMed: https://pubmed.ncbi.nlm.nih.gov/
 
 Links provide context, not evidence of clinical validation or live API integration.
+
+## Multi-turn update
+After completing the four intake prompts, the chat stays open for unlimited follow-up questions and additional reported symptoms. A limited reviewed hand-injury educational card provides general first-aid and activity-avoidance information, while unknown concerns abstain. The report incorporates all follow-ups and refreshes on further questions. This is keyword/rule-based guidance, not a conversational LLM, diagnosis or clinically validated triage.
