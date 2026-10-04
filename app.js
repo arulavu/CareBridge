@@ -1,10 +1,11 @@
+import {aiConfigured,aiReply} from './ai-client.js';
 import {medicationReaction} from './reaction.js';
 import {routeMessage,promptFor} from './continuity.js';
 import {followupAnswer} from './followup.js';
 import {messageIntent,socialResponse} from './conversation.js';
 import {topicForConcern,questionsFor,safetyScreen,specialties} from './triage.js';
 import {assess} from './guidance.js';
-const $=id=>document.getElementById(id);const KEY='ai_clinic_worldbank_demo_v3';
+const $=id=>document.getElementById(id);const KEY='ai_clinic_worldbank_demo_v3';let aiBusy=false;
 let state={messages:[],answers:{},followups:[],additionalConcerns:[],stage:0,report:null,booking:null,handed:false};let selectedDoctor=null,selectedDate=null,selectedTime=null;
 // Questions are selected by the patient's stated concern, not a single injury script.
 const questionSets={
@@ -64,9 +65,24 @@ function renderMessages(){
  area.scrollTop=area.scrollHeight;const quick=$('quickChoices');if(quick)quick.remove();
 }
 function ask(){bubble('ai','Tell me what you would like to discuss. You can ask another question or introduce a different concern at any time.')}
-function receive(value){
+async function receive(value){
  const v=String(value||'').trim();if(!v)return;
  $('messageInput').value='';bubble('user',v);
+ if(aiConfigured()){
+  if(aiBusy){bubble('ai','Please wait for the previous answer before sending another message.');return;}
+  aiBusy=true;const send=$('chatForm').querySelector('button.send');send.disabled=true;
+  const history=state.messages.map(m=>({role:m.role,text:m.message}));
+  try{
+   const answer=await aiReply(history);
+   if(!state.answers.concern){state.answers.concern=v;state.topic=topicForConcern(v);}
+   else state.followups.push(v);
+   bubble('ai',answer.reply);
+   // The summary remains a separate, explicitly limited demonstration report.
+   if(state.report)makeReport(false);updateProgress();persist();
+  }catch(err){bubble('ai','The conversational AI service is unavailable. I cannot safely improvise a medical answer. Please try again later; if symptoms may be urgent, contact an appropriate medical service. ('+err.message+')');}
+  finally{aiBusy=false;send.disabled=false;}
+  return;
+ }
  const intent=messageIntent(v);
  if(intent==='social'){bubble('ai',socialResponse(v));return;}
  if(intent==='correction'){bubble('ai',"I misunderstood. Please tell me what you meant; I won't treat this correction as a symptom.");return;}

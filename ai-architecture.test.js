@@ -1,0 +1,3 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';
+test('server reads secret from environment, not frontend',()=>{const server=readFileSync(new URL('../server.mjs',import.meta.url),'utf8');const config=readFileSync(new URL('../config.js',import.meta.url),'utf8');assert.match(server,/process.env.OPENAI_API_KEY/);assert.doesNotMatch(config,/sk-[a-zA-Z0-9]/)});
+test('frontend sends history and current message',()=>{const src=readFileSync(new URL('../ai-client.js',import.meta.url),'utf8');assert.match(src,/messages.filter/);assert.match(src,/api\/chat/)});
