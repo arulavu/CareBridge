@@ -1,21 +1,29 @@
 // Small, curated, educational offline guidance. Not clinical decision support.
 export const SOURCES={
+ limb:[['MedlinePlus — Injuries','https://medlineplus.gov/woundsandinjuries.html']],
+ abdominal:[['MedlinePlus — Abdominal Pain','https://medlineplus.gov/abdominalpain.html']],
+ allergy:[['MedlinePlus — Allergy','https://medlineplus.gov/allergy.html']],
+ poisoning:[['MedlinePlus — Poisoning','https://medlineplus.gov/poisoning.html']],
+ chest:[['MedlinePlus — Chest Pain','https://medlineplus.gov/chestpain.html']],
+ neurological:[['MedlinePlus — Headache','https://medlineplus.gov/headache.html']],
+ urinary:[['MedlinePlus — Urinary Tract Infections','https://medlineplus.gov/urinarytractinfections.html']],
  pain:[['MedlinePlus — Pain','https://medlineplus.gov/pain.html']],
- leg:[['NHS — Leg pain','https://www.nhs.uk/symptoms/leg-pain/'],['MedlinePlus — Leg injuries and disorders','https://medlineplus.gov/leginjuriesanddisorders.html']],
- back:[['NHS — Back pain','https://www.nhs.uk/conditions/back-pain/']],
- headache:[['NHS — Headaches','https://www.nhs.uk/symptoms/headaches/']],
  digestive:[['MedlinePlus — Digestive Diseases','https://medlineplus.gov/digestivediseases.html']],
  skin:[['MedlinePlus — Skin Conditions','https://medlineplus.gov/skinconditions.html']],
- hand:[['NHS — Hand pain','https://www.nhs.uk/symptoms/hand-pain/'],['MedlinePlus — Injuries','https://medlineplus.gov/woundsandinjuries.html']],
+ hand:[['NHS — Broken finger','https://www.nhs.uk/conditions/broken-finger/'],['MedlinePlus — Finger injuries and disorders','https://medlineplus.gov/fingerinjuriesanddisorders.html']],
  respiratory:[['NHS — Common cold','https://www.nhs.uk/conditions/common-cold/'],['MedlinePlus — Common cold','https://medlineplus.gov/commoncold.html']],
  mental:[['WHO — Mental health','https://www.who.int/health-topics/mental-health'],['MedlinePlus — Mental health','https://medlineplus.gov/mentalhealth.html']],
  checkup:[['MedlinePlus — Health screenings','https://medlineplus.gov/healthscreening.html'],['MedlinePlus — Health checkup','https://medlineplus.gov/ency/article/002125.htm']],
  general:[['MedlinePlus — Health topics','https://medlineplus.gov/healthtopics.html']]
 };
 const guides={
- leg:'You mentioned leg pain. Avoid activities that clearly worsen it; rest from strenuous exercise while you arrange assessment. If this followed a minor strain and there are no warning signs, a cold pack wrapped in cloth for up to 20 minutes may help discomfort. Do not massage a swollen, hot or red calf. New one-sided swelling, redness or warmth needs urgent medical assessment; chest pain or breathlessness needs emergency help. An injury, clot or other cause cannot be ruled out here.',
- back:'For back pain without warning signs, avoid heavy lifting and prolonged bed rest; gentle movement as tolerated may help. Arrange professional assessment if it persists or worsens. New bladder or bowel control problems, numbness around the groin or progressive leg weakness require emergency assessment.',
- headache:'For a mild familiar headache, consider hydration, rest and limiting activities that worsen symptoms. Seek urgent assessment for a new or worsening headache. A sudden extremely severe headache, weakness, confusion, fever with stiff neck or new vision loss needs emergency help.',
+ limb:'Describe the exact location, injury history, ability to walk or move, and any swelling or numbness. Pain after trauma or inability to bear weight needs professional assessment; new severe one-sided swelling or a cold, pale limb needs urgent assessment.',
+ abdominal:'Abdominal pain has many possible causes. Describe its location, onset, intensity, bowel and urinary changes, medicines and pregnancy possibility where relevant. Severe sudden pain, fainting or bleeding requires urgent assessment. Do not assume self-care is appropriate.',
+ allergy:'A mild rash can have several causes. Identify any suspected exposure and avoid it if safe. Difficulty breathing, throat or tongue swelling or fainting may signal a life-threatening reaction: contact emergency services immediately.',
+ poisoning:'For suspected poisoning, contact a local poison-control service or emergency service immediately. Do not induce vomiting or try home antidotes. Keep product details available if safe.',
+ chest:'Chest symptoms can be serious and cannot be assessed safely here. New or unexplained chest pain, especially with breathlessness, faintness or sweating, requires urgent medical assessment.',
+ neurological:'Sudden severe headache, new weakness, speech difficulty or confusion requires emergency help. For other neurological concerns, seek medical assessment when new, persistent or worsening.',
+ urinary:'Urinary symptoms may need testing and treatment. Fever with flank pain, inability to pass urine or symptoms during pregnancy warrant prompt professional assessment.',
  pain:'For unexplained pain, avoid activities that clearly worsen it and document its location, duration and severity. Because causes vary, arrange professional assessment for persistent, severe or worsening pain. Seek urgent help for severe or rapidly worsening symptoms.',
  digestive:'For mild digestive discomfort, consider adequate fluids and note food, medicines and timing. Do not assume the cause. Seek professional assessment for persistent or worsening symptoms; severe abdominal pain, bloody vomit or black stools need urgent assessment.',
  skin:'For an unfamiliar skin concern, avoid irritating products and note any new medications or exposures. Seek assessment if it spreads, becomes painful, develops fever or persists. Rapid swelling of lips or tongue or breathing trouble requires emergency help.',
@@ -25,27 +33,13 @@ const guides={
  checkup:'For a routine check-up, prepare a list of medications, allergies, family history, prior results, questions and any new symptoms. Ask a licensed clinician which screenings or vaccinations are appropriate for your age, history and local guidance. This prototype does not determine individual screening eligibility or recommend specific tests.',
  general:'I can help organize your questions for a clinician. Record when symptoms began, what makes them better or worse, relevant medicines and any new or worsening changes. For an unfamiliar concern, I cannot safely give condition-specific treatment advice. If symptoms are severe or rapidly worsening, seek prompt professional assessment.'
 };
-// Narrow educational matcher. Positive red flags take precedence; never infer a benign diagnosis.
 export function assess(notes,answers={},selectedTopic){
  const n=String(notes||'').toLowerCase();
- const has=(r)=>r.test(n);
- const limb=has(/\b(hand|finger|wrist|leg|calf|knee|ankle|foot|feet|arm|elbow|shoulder)\b|қол|аяқ|кисть|нога/);
- const fracture=has(/\b(broken|broke|fractur(?:e|ed)|might be broken|could be broken)\b/)&&limb;
- const hand=has(/\b(hand|finger|wrist)\b|қол|саусақ|кисть|палец|запясть/)&&has(/hurt|pain|ache|injur|hit|fell|fall|swoll|broken|broke|fractur|удар|болит|травм|ауыр|соқ/);
- const leg=has(/\b(leg|calf|knee|ankle|foot|feet|thigh|shin)\b|аяқ|нога/)&&has(/hurt|pain|ache|injur|hit|fell|fall|swoll|broken|broke|fractur|болит|ауыр/);
- const back=has(/\b(back|spine|lower back)\b/)&&has(/hurt|pain|ache|sore|болит/);
- const headache=has(/headache|migraine|head hurts|head pain/);
- const topic=hand?'hand':leg?'leg':back?'back':headache?'headache':selectedTopic==='injury'?'pain':selectedTopic&&SOURCES[selectedTopic]?selectedTopic:'general';
- const denied=(term)=>new RegExp('\\b(?:no|not|without|deny|denies)\\s+(?:\\w+\\s+){0,2}'+term+'\\b').test(n);
- const emergency=(has(/\b(chest pain|trouble breathing|difficulty breathing|cannot breathe|can't breathe|severe bleeding|unconscious|want to die|hurt myself|suicidal)\b/)&&!denied('chest pain|trouble breathing|difficulty breathing|severe bleeding')) || has(/sudden worst headache|sudden extremely severe headache|new loss of bladder control|new loss of bowel control/);
- const clotConcern=topic==='leg'&&has(/\b(swollen|swelling|red|warm|hot)\b/)&&has(/\b(one leg|one-sided|calf|leg)\b/)&&!has(/no swelling|not swollen/);
- const flagWords=Object.entries(answers).filter(([k,v])=>v===true).map(([k])=>k);
- const concerning=flagWords.length>0||has(/\b(numbness|can't walk|cannot walk|unable to bear weight|deformity|severe pain|rapidly worsening)\b/);
- const urgent=emergency||fracture||clotConcern||concerning;
- let guidance=guides[topic];
- if(fracture){guidance='You reported a POSSIBLE FRACTURE. This cannot be ruled out in an online chat. Arrange prompt in-person assessment today; an examination and possibly an X-ray may be needed. Until assessed, avoid weight-bearing or forceful use of the injured limb, support it in a comfortable position, and use a cold pack wrapped in cloth for up to 20 minutes at a time. Do not try to straighten a deformed limb. Severe pain, loss of sensation, a cold or blue limb or an open injury warrants emergency care.';}
- else if(clotConcern){guidance='You described leg symptoms that can sometimes signal a serious problem. Seek urgent in-person medical assessment today. Do not massage the affected leg. If chest pain, fainting or difficulty breathing develops, contact emergency services immediately. This app cannot determine the cause.';}
- else if(concerning){guidance='Your description includes a concerning symptom. Arrange prompt in-person medical assessment; if you cannot bear weight, have a deformed limb or rapidly worsening severe symptoms, seek urgent care. '+guides[topic];}
- if(emergency)guidance='Your description may include an emergency warning sign. Contact local emergency or crisis services now. Do not wait for an online appointment or rely on this prototype.';
- return {topic,urgent,emergency,flags:flagWords,recognized:topic!=='general',guidance,sources:SOURCES[topic]};
+ const hand=/hand|finger|wrist|қол|саусақ|кисть|палец|запясть/.test(n)&&/hit|hurt|injur|fell|fall|pain|swoll|break|broke|broken|fractur|удар|болит|травм|ауыр|соқ/.test(n);
+ const topic=hand?'hand':selectedTopic&&SOURCES[selectedTopic]?selectedTopic:'general';
+ const urgent=/(?:^|[.!?;]\s*)(?:i have |i am experiencing )?(?:chest pain|difficulty breathing|trouble breathing|severe bleeding)|can't breathe|cannot breathe|unconscious|suicid|self.harm|want to die|hurt myself|i need urgent help/i.test(n)&&!/^(?:no|not|without) (?:chest pain|difficulty breathing|trouble breathing)/.test(n.trim());
+ const suspectedFracture=topic==='hand'&&(/deformity|possible fracture/i.test(String(answers.flags||''))||/(?:broken|broke|fractur)/i.test(n));
+ const reported=String(answers.flags||'').toLowerCase();
+ const flags=topic==='hand'&&/(deformity|possible fracture|severe swelling|severe pain|numbness|blue|cold limb|open wound|cannot move)/.test(reported)?[answers.flags]:[];
+ return {topic,urgent:urgent||flags.length>0||suspectedFracture,flags,recognized:topic!=='general',guidance:urgent?'Potentially serious warning signs were reported. Seek immediate local emergency or crisis assistance if you are in danger or experiencing severe symptoms. Do not wait for this demo.':suspectedFracture?'You reported a possible broken finger (fracture) or hand injury. This cannot be ruled out online. Arrange prompt in-person assessment today; an examination and possibly an X-ray may be needed. Until assessed, avoid using or putting weight on the hand, do not force movement, remove rings if swelling begins, and apply a cold pack wrapped in cloth for up to 20 minutes at a time. If fingers are numb, blue, cold, misshapen, or pain is severe, seek emergency care.':flags.length?'Your answers include concerning signs. Arrange prompt in-person medical assessment; for severe symptoms contact local emergency services. General self-care is not a substitute for assessment.':guides[topic],sources:SOURCES[topic]};
 }

@@ -1,0 +1,61 @@
+concern,category,url,link_type
+Hand and finger injury,Injuries,https://medlineplus.gov/fingerinjuriesanddisorders.html,Topic-specific
+Hand and wrist pain,Pain,https://medlineplus.gov/handinjuriesanddisorders.html,Topic-specific
+Suspected fracture,Injuries,https://medlineplus.gov/fractures.html,Topic-specific
+Leg and knee pain,Pain,https://medlineplus.gov/all_healthtopics.html,General topic directory — choose matching topic
+Ankle and foot pain,Pain,https://medlineplus.gov/all_healthtopics.html,General topic directory — choose matching topic
+Back and neck pain,Pain,https://medlineplus.gov/all_healthtopics.html,General topic directory — choose matching topic
+Joint pain and swelling,Pain,https://medlineplus.gov/all_healthtopics.html,General topic directory — choose matching topic
+Muscle pain,Pain,https://medlineplus.gov/all_healthtopics.html,General topic directory — choose matching topic
+Abdominal pain,Digestive,https://medlineplus.gov/abdominalpain.html,Topic-specific
+Nausea and vomiting,Digestive,https://medlineplus.gov/all_healthtopics.html,General topic directory — choose matching topic
+Diarrhea and constipation,Digestive,https://medlineplus.gov/all_healthtopics.html,General topic directory — choose matching topic
+Acid reflux and indigestion,Digestive,https://medlineplus.gov/all_healthtopics.html,General topic directory — choose matching topic
+Liver and gallbladder concerns,Digestive,https://medlineplus.gov/all_healthtopics.html,General topic directory — choose matching topic
+Kidney and flank pain,Urinary,https://medlineplus.gov/all_healthtopics.html,General topic directory — choose matching topic
+Chest pain,Cardiovascular,https://medlineplus.gov/chestpain.html,Topic-specific
+Palpitations,Cardiovascular,https://medlineplus.gov/all_healthtopics.html,General topic directory — choose matching topic
+High or low blood pressure,Cardiovascular,https://medlineplus.gov/all_healthtopics.html,General topic directory — choose matching topic
+Leg swelling,Cardiovascular,https://medlineplus.gov/all_healthtopics.html,General topic directory — choose matching topic
+Cough and cold,Respiratory,https://medlineplus.gov/commoncold.html,Topic-specific
+Breathing difficulty,Respiratory,https://medlineplus.gov/all_healthtopics.html,General topic directory — choose matching topic
+Sore throat,Respiratory,https://medlineplus.gov/all_healthtopics.html,General topic directory — choose matching topic
+Fever,General symptoms,https://medlineplus.gov/all_healthtopics.html,General topic directory — choose matching topic
+Headache and migraine,Neurological,https://medlineplus.gov/headache.html,Topic-specific
+Dizziness and fainting,Neurological,https://medlineplus.gov/all_healthtopics.html,General topic directory — choose matching topic
+Numbness and weakness,Neurological,https://medlineplus.gov/all_healthtopics.html,General topic directory — choose matching topic
+Confusion and memory concerns,Neurological,https://medlineplus.gov/all_healthtopics.html,General topic directory — choose matching topic
+Seizures,Neurological,https://medlineplus.gov/all_healthtopics.html,General topic directory — choose matching topic
+Rash and itching,Skin,https://medlineplus.gov/all_healthtopics.html,General topic directory — choose matching topic
+Skin infection and wounds,Skin,https://medlineplus.gov/woundsandinjuries.html,Topic-specific
+Moles and skin changes,Skin,https://medlineplus.gov/all_healthtopics.html,General topic directory — choose matching topic
+Allergy and hives,Allergy,https://medlineplus.gov/allergy.html,Topic-specific
+Severe allergic reaction,Allergy,https://medlineplus.gov/ency/article/000005.htm,Topic-specific
+Food allergy,Allergy,https://medlineplus.gov/all_healthtopics.html,General topic directory — choose matching topic
+Suspected poisoning,Poisoning,https://medlineplus.gov/ency/article/007579.htm,Topic-specific
+Medication overdose or reaction,Poisoning,https://medlineplus.gov/ency/article/007579.htm,Topic-specific
+Chemical and gas exposure,Poisoning,https://medlineplus.gov/ency/article/007579.htm,Topic-specific
+Foodborne illness,Poisoning,https://medlineplus.gov/all_healthtopics.html,General topic directory — choose matching topic
+Painful or frequent urination,Urinary,https://medlineplus.gov/urinarytractinfections.html,Topic-specific
+Blood in urine,Urinary,https://medlineplus.gov/all_healthtopics.html,General topic directory — choose matching topic
+Menstrual and pelvic concerns,Reproductive,https://medlineplus.gov/all_healthtopics.html,General topic directory — choose matching topic
+Pregnancy-related concerns,Reproductive,https://medlineplus.gov/all_healthtopics.html,General topic directory — choose matching topic
+Sexual health,Reproductive,https://medlineplus.gov/all_healthtopics.html,General topic directory — choose matching topic
+Eye pain and vision changes,Sensory,https://medlineplus.gov/all_healthtopics.html,General topic directory — choose matching topic
+Ear pain and hearing,Sensory,https://medlineplus.gov/all_healthtopics.html,General topic directory — choose matching topic
+Dental and mouth pain,Sensory,https://medlineplus.gov/all_healthtopics.html,General topic directory — choose matching topic
+Anxiety and panic,Mental health,https://medlineplus.gov/mentalhealth.html,Topic-specific
+Low mood and depression,Mental health,https://medlineplus.gov/mentalhealth.html,Topic-specific
+Sleep concerns,Mental health,https://medlineplus.gov/all_healthtopics.html,General topic directory — choose matching topic
+Self-harm concerns,Mental health,https://medlineplus.gov/mentalhealth.html,Topic-specific
+Fatigue,General symptoms,https://medlineplus.gov/all_healthtopics.html,General topic directory — choose matching topic
+Unexplained weight changes,General symptoms,https://medlineplus.gov/all_healthtopics.html,General topic directory — choose matching topic
+Routine annual check-up,Preventive care,https://medlineplus.gov/healthscreening.html,Topic-specific
+Vaccinations,Preventive care,https://medlineplus.gov/all_healthtopics.html,General topic directory — choose matching topic
+Cancer screening questions,Preventive care,https://medlineplus.gov/healthscreening.html,Topic-specific
+Review lab test results,Preventive care,https://medlineplus.gov/all_healthtopics.html,General topic directory — choose matching topic
+Chronic condition follow-up,Preventive care,https://medlineplus.gov/all_healthtopics.html,General topic directory — choose matching topic
+Medication questions,Preventive care,https://medlineplus.gov/all_healthtopics.html,General topic directory — choose matching topic
+Child health concerns,Preventive care,https://medlineplus.gov/all_healthtopics.html,General topic directory — choose matching topic
+Older adult health concerns,Preventive care,https://medlineplus.gov/all_healthtopics.html,General topic directory — choose matching topic
+Other or not sure,Other,https://medlineplus.gov/all_healthtopics.html,General topic directory — choose matching topic
