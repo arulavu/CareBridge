@@ -39,9 +39,13 @@ function topicFor(text){
  if(/suicid|self.harm|anxie|stress|depress|mental|panic|mood|therapy|psycholog|ұйқы|стресс|тревог|депресс/.test(t))return 'mental';
  if(/check.up|checkup|annual|routine|screening|preventive|vaccin|physical exam|профосмотр|тексеру/.test(t))return 'checkup';
  if(/cold|cough|flu|fever|sore throat|runny nose|congest|простуд|кашель|тұмау/.test(t))return 'respiratory';
- if(/injur|hit|hurt my hand|fell|fractur|sprain|wound|cut my|swoll|травм|ушиб/.test(t))return 'injury';
+ if(/injur|hit|hurt my hand|fell|fractur|broken|broke|sprain|wound|cut my|swoll|травм|ушиб/.test(t))return 'injury';
+ if(/stomach|abdomen|abdominal|diarrh|nausea|vomit|digest|constipat/.test(t))return 'digestive';
+ if(/skin|rash|itch|eczema|acne/.test(t))return 'skin';
+ if(/pain|ache|sore|hurts/.test(t))return 'pain';
  return 'general';
 }
+questionSets.pain=questionSets.general;questionSets.digestive=questionSets.general;questionSets.skin=questionSets.general;
 function activeQuestions(){return questionSets[state.topic||'general'];}
 function critical(text){const t=String(text||'').toLowerCase();if(/^(none|none of these|none reported|no|i am safe|not applicable)$/.test(t.trim()))return false;return /(?:^|[.!?;]\s*)(?:i have |i am experiencing |experiencing |i need )?(?:chest pain|trouble breathing|difficulty breathing|severe bleeding|urgent help)|can't breathe|cannot breathe|i need urgent help|want to die|hurt myself|suicid|self.harm/i.test(t)&&!/^(?:no|not|without|deny|denies)\s+(?:chest pain|trouble breathing|difficulty breathing|severe bleeding)/i.test(t.trim());}
 function concernGuidance(){const a=state.answers;const all=[a.concern,a.symptoms,...(state.followups||[])].join(' ');return assess(all,extractFlags(all,a),state.topic)}
@@ -51,7 +55,7 @@ function persist(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch{}}
 function bubble(role,message){state.messages.push({role,message});renderMessages();persist()}
 function renderMessages(){const area=$('messages');area.replaceChildren();state.messages.forEach(m=>{const d=document.createElement('div');d.className='bubble '+m.role;d.textContent=m.message;area.append(d)});area.scrollTop=area.scrollHeight;const quick=$('quickChoices');if(quick)quick.remove();if(state.stage>0&&state.stage<=activeQuestions().length){const row=document.createElement('div');row.className='quick';row.id='quickChoices';activeQuestions()[state.stage-1].choices.forEach(c=>{const b=document.createElement('button');b.textContent=c;b.type='button';b.onclick=()=>receive(c);row.append(b)});area.after(row)}}
 function ask(){if(state.stage<=activeQuestions().length){bubble('ai',activeQuestions()[state.stage-1].q)}else{bubble('ai','Thank you. Your preliminary report is ready. Select “Analyse consultation” to view general guidance, source references and demonstration specialists.')}}
-function receive(value){const v=value.trim();if(!v)return;if(state.stage===0){state.answers.concern=v;state.topic=topicFor(v);state.stage=1;bubble('user',v);const isEmergency=critical(v);if(isEmergency)bubble('ai','Your description may include an emergency warning sign. Seek immediate local emergency assistance now; do not wait for this demonstration.');ask()}else if(state.stage<=activeQuestions().length){state.answers[activeQuestions()[state.stage-1].key]=v;state.stage++;bubble('user',v);if(critical(v))bubble('ai','You may have reported an urgent concern. If you are in immediate danger, contact local emergency or crisis services. This demo cannot assess urgency.');ask()}else handleFollowup(v);$('messageInput').value='';updateProgress();persist()}
+function receive(value){const v=value.trim();if(!v)return;if(state.stage===0){state.answers.concern=v;state.topic=topicFor(v);state.stage=1;bubble('user',v);const isEmergency=critical(v);if(isEmergency)bubble('ai','Your description may include an emergency warning sign. Seek immediate local emergency assistance now; do not wait for this demonstration.');const early=assess(v,{},state.topic);if(early.urgent&&!isEmergency)bubble('ai',early.guidance);ask()}else if(state.stage<=activeQuestions().length){state.answers[activeQuestions()[state.stage-1].key]=v;state.stage++;bubble('user',v);if(critical(v))bubble('ai','You may have reported an urgent concern. If you are in immediate danger, contact local emergency or crisis services. This demo cannot assess urgency.');ask()}else handleFollowup(v);$('messageInput').value='';updateProgress();persist()}
 // After the initial intake, accept multiple additional symptoms and questions in the same session.
 // Answers are from a narrow reviewed educational library, never generated diagnoses.
 function handleFollowup(v){
@@ -59,7 +63,7 @@ function handleFollowup(v){
  state.followups.push(v);
  bubble('user',v);
  const context=[state.answers.concern,state.answers.symptoms,...state.followups].join(' ');
- const guide=assess(context,extractFlags(context,state.answers),state.topic);
+ const guide=assess(context,extractFlags(context,state.answers),topicFor(v)==='general'?state.topic:topicFor(v));
  const q=v.toLowerCase();
  const asksCare=/what|how|should|recommend|suggest|avoid|do now|help|cold|ice|compress|move|rest|care|treat|advice|не істе|болмай|можно|делать|нельзя/.test(q);
  if(critical(v)){bubble('ai','You may have described an urgent concern. If you are in immediate danger, have chest pain, difficulty breathing, or risk of harming yourself, contact local emergency or crisis services now. This demo cannot assess urgency.');}
@@ -68,6 +72,7 @@ function handleFollowup(v){
  else if(guide.recognized){bubble('ai',guide.guidance+'\n\nYou can ask follow-up questions or select Analyse consultation to refresh your report.');}
  else{bubble('ai',guide.guidance+'\n\nI saved your question for a clinician. You can keep adding details or refresh your report.');}
  if(state.report)makeReport(false);
+ bubble('ai','You can keep asking questions or add new symptoms. I will update the report; this is not a diagnosis.');
  updateProgress();persist();
 }
 function extractFlags(context,answers){

@@ -1,0 +1,1 @@
+Updated: possible-fracture concern now escalates and avoids reassurance. Broader topic routing and unlimited follow-up chat. Google Translate opens as an optional external link (requires internet, not verified medical translation). No general-purpose medical AI, no diagnosis, no actual appointments. Review all output clinically before deployment.
