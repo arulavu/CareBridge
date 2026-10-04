@@ -1,11 +1,9 @@
-import {aiConfigured,aiReply} from './ai-client.js';
-import {medicationReaction} from './reaction.js';
 import {routeMessage,promptFor} from './continuity.js';
 import {followupAnswer} from './followup.js';
 import {messageIntent,socialResponse} from './conversation.js';
 import {topicForConcern,questionsFor,safetyScreen,specialties} from './triage.js';
 import {assess} from './guidance.js';
-const $=id=>document.getElementById(id);const KEY='ai_clinic_worldbank_demo_v3';let aiBusy=false;
+const $=id=>document.getElementById(id);const KEY='ai_clinic_worldbank_demo_v3';
 let state={messages:[],answers:{},followups:[],additionalConcerns:[],stage:0,report:null,booking:null,handed:false};let selectedDoctor=null,selectedDate=null,selectedTime=null;
 // Questions are selected by the patient's stated concern, not a single injury script.
 const questionSets={
@@ -59,103 +57,42 @@ const doctors=[{id:0,name:'Dr. Amina Sadykova',initials:'AS',role:'General pract
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function persist(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch{}}
 function bubble(role,message){state.messages.push({role,message});renderMessages();persist()}
-function renderMessages(){
- const area=$('messages');area.replaceChildren();
- state.messages.forEach(m=>{const d=document.createElement('div');d.className='bubble '+m.role;d.textContent=m.message;area.append(d)});
- area.scrollTop=area.scrollHeight;renderQuickChoices();
-}
-const CATEGORY_CHOICES=['Hand or finger','Leg or foot','Headache','Stomach or digestion','Allergy','Cold or cough','Medication question','Mental health','Routine check-up','Something else'];
-function quickOptions(){
- const last=[...state.messages].reverse().find(m=>m.role==='ai')?.message||'';
- if(/hand|finger|wrist/i.test(last))return ['Hand or finger','Today','Yesterday','Can move it','Cannot move it','Swelling or deformity','What can I do meanwhile?','Which doctor should I see?','Another concern'];
- if(/allerg|rash|hives|itch|throat/i.test(last))return ['Sneezing or itchy eyes','Hives or rash','Sore throat','Throat swelling','Trouble breathing','After taking medication','Not sure','Another concern'];
- if(/leg|foot|ankle/i.test(last))return ['Leg or foot','After an injury','Without an injury','Can walk','Cannot walk','Swelling','Another concern'];
- if(/digest|diarrhea|constipat|stomach|abdomin/i.test(last))return ['Diarrhea','Constipation','Stomach pain','Vomiting','Blood in stool','How long?','Another concern'];
- return CATEGORY_CHOICES;
-}
-function renderQuickChoices(){
- let quick=$('quickChoices');
- if(!quick){quick=document.createElement('div');quick.id='quickChoices';quick.className='quickChoices';$('messages').after(quick);}
- quick.replaceChildren();
- for(const choice of quickOptions()){
-  const button=document.createElement('button');button.type='button';button.className='choiceChip';button.textContent=choice;
-  button.onclick=()=>{
-   if(choice==='Another concern'||choice==='Something else'){$('messageInput').focus();$('messageInput').placeholder='Describe your new question or concern…';return;}
-   receive(choice);
-  };quick.append(button);
- }
-}
-function ask(){bubble('ai','Tell me what you would like to discuss. You can ask another question or introduce a different concern at any time.')}
-async function receive(value){
- const v=String(value||'').trim();if(!v)return;
- $('messageInput').value='';bubble('user',v);
- if(aiConfigured()){
-  if(aiBusy){bubble('ai','Please wait for the previous answer before sending another message.');return;}
-  aiBusy=true;const send=$('chatForm').querySelector('button.send');send.disabled=true;
-  const history=state.messages.map(m=>({role:m.role,text:m.message}));
-  try{
-   const answer=await aiReply(history);
-   if(!state.answers.concern){state.answers.concern=v;state.topic=topicForConcern(v);}
-   else state.followups.push(v);
-   bubble('ai',answer.reply);
-   // The summary remains a separate, explicitly limited demonstration report.
-   if(state.report)makeReport(false);updateProgress();persist();
-  }catch(err){bubble('ai','The conversational AI service is unavailable. I cannot safely improvise a medical answer. Please try again later; if symptoms may be urgent, contact an appropriate medical service. ('+err.message+')');}
-  finally{aiBusy=false;send.disabled=false;}
-  return;
- }
- const offlineReaction=medicationReaction(v,state.messages.filter(m=>m.role==='user').slice(-8).map(m=>m.message));
- const offlineSafety=safetyScreen(v,topicForConcern(v));
- if(offlineReaction){bubble('ai',offlineReaction.message);return;}
- if(['emergency','urgent','prompt'].includes(offlineSafety.level)){bubble('ai',offlineSafety.message+' This offline demonstration cannot safely assess your full situation.');return;}
- if(!aiConfigured()){
-  bubble('ai','The live conversational AI is not connected yet. The buttons help you choose a concern, but I cannot reliably interpret follow-up answers or determine whether self-care is safe until the backend is configured. You can still browse the health concerns catalog and its medical references.');return;
- }
- const intent=messageIntent(v);
+function renderMessages(){const area=$('messages');area.replaceChildren();state.messages.forEach(m=>{const d=document.createElement('div');d.className='bubble '+m.role;d.textContent=m.message;area.append(d)});area.scrollTop=area.scrollHeight;const quick=$('quickChoices');if(quick)quick.remove();if(state.stage>0&&state.stage<=activeQuestions().length){const row=document.createElement('div');row.className='quick';row.id='quickChoices';activeQuestions()[state.stage-1].choices.forEach(c=>{const b=document.createElement('button');b.textContent=c;b.type='button';b.onclick=()=>receive(c);row.append(b)});area.after(row)}}
+function ask(){if(state.stage<=activeQuestions().length){bubble('ai',activeQuestions()[state.stage-1].q)}else{bubble('ai','Thank you. Your preliminary report is ready. Select “Analyse consultation” to view general guidance, source references and demonstration specialists.')}}
+function receive(value){const v=value.trim();if(!v)return;if(state.stage===0){if(messageIntent(v)==='social'){bubble('user',v);bubble('ai','Hello! What health question or concern would you like help organizing today?');$('messageInput').value='';return;}state.answers.concern=v;state.topic=topicForConcern(v);state.stage=1;bubble('user',v);const isEmergency=critical(v);if(isEmergency)bubble('ai','Your description may include an emergency warning sign. Seek immediate local emergency assistance now; do not wait for this demonstration.');const early=safetyScreen(v,state.topic);if(early.level!=='unknown'&&!isEmergency)bubble('ai',early.message);ask()}else if(state.stage<=activeQuestions().length && /\?$/.test(v) && /(?:should|can i|what|how|when|which|is it|do i|could|would)/i.test(v)){handleFollowup(v)}else if(state.stage<=activeQuestions().length&&routeMessage(v,state.topic).kind==='additional'){handleFollowup(v)}else if(state.stage<=activeQuestions().length){state.answers[activeQuestions()[state.stage-1].key]=v;state.stage++;bubble('user',v);const safety=safetyScreen(v,state.topic,{flags:state.answers.flags});if(safety.level!=='unknown')bubble('ai',safety.message);ask()}else handleFollowup(v);$('messageInput').value='';updateProgress();persist()}
+// After the initial intake, accept multiple additional symptoms and questions in the same session.
+// Answers are from a narrow reviewed educational library, never generated diagnoses.
+function handleFollowup(v){
+ const intent=messageIntent(v);bubble('user',v);
  if(intent==='social'){bubble('ai',socialResponse(v));return;}
- if(intent==='correction'){bubble('ai',"I misunderstood. Please tell me what you meant; I won't treat this correction as a symptom.");return;}
- if(intent==='new-topic'){
-  state.answers={};state.followups=[];state.additionalConcerns=[];state.topic='general';state.activeTopic=null;state.stage=0;state.report=null;
-  $('reportSection').classList.add('hidden');bubble('ai','Of course. What would you like to discuss?');updateProgress();persist();return;
- }
- const previous=state.followups||[];
- const reaction=medicationReaction(v,[state.answers.concern||'',...previous]);
- if(reaction){
+ if(intent==='correction'){bubble('ai',"You're right—I misunderstood. A greeting or correction isn't a symptom. Would you like to continue your earlier concern, ask a different question, or start a new consultation?");return;}
+ if(intent==='new-topic'){state.answers={};state.followups=[];state.additionalConcerns=[];state.stage=0;state.topic='general';state.report=null;$('reportSection').classList.add('hidden');bubble('ai','Of course. What new concern or question would you like to discuss?');updateProgress();persist();return;}
+ const route=routeMessage(v,state.topic);
+ if(route.kind==='additional'){
   state.additionalConcerns=state.additionalConcerns||[];
-  state.additionalConcerns.push({topic:'allergy',description:v,details:'Possible medication reaction; requires human assessment'});
-  state.followups.push(v);state.activeTopic='allergy';bubble('ai',reaction.message);
+  state.additionalConcerns.push({topic:route.topic,description:v,details:'',awaiting:true});
+  state.followups.push(v);
+  const screen=safetyScreen(v,route.topic);
+  if(['emergency','urgent','prompt'].includes(screen.level))bubble('ai',screen.message);
+  bubble('ai',promptFor(route.topic));
   if(state.report)makeReport(false);updateProgress();persist();return;
  }
- const route=routeMessage(v,state.activeTopic||state.topic||'general');
- const detected=topicForConcern(v);
- const newConcern=!state.answers.concern;
- if(newConcern){state.answers.concern=v;state.topic=detected;state.activeTopic=detected;state.stage=1;}
- else if(route.kind==='additional'){
-  state.additionalConcerns=state.additionalConcerns||[];
-  state.additionalConcerns.push({topic:route.topic,description:v,details:''});
-  state.activeTopic=route.topic;
- }else if(detected!=='general'&&detected!==(state.activeTopic||state.topic)&&/\b(?:also|new|another|i have|i think|i feel|my)\b/i.test(v)){
-  state.additionalConcerns=state.additionalConcerns||[];
-  state.additionalConcerns.push({topic:detected,description:v,details:''});state.activeTopic=detected;
+ const recent=(state.additionalConcerns||[]).at(-1);
+ if(recent&&recent.awaiting&&!/^(what|how|should|can|which|is it)\b/i.test(v)){
+  recent.details=v;recent.awaiting=false;state.followups.push(v);
+  const screen=safetyScreen(v,recent.topic);
+  if(['emergency','urgent','prompt'].includes(screen.level))bubble('ai',screen.message);
+  else bubble('ai','Thank you. I added that to your additional concern. Would you like to ask more about it or return to your earlier concern? This prototype cannot determine whether self-care is safe.');
+  if(state.report)makeReport(false);updateProgress();persist();return;
  }
- state.followups=state.followups||[];if(!newConcern)state.followups.push(v);
- const target=state.activeTopic||state.topic;
+ state.followups=state.followups||[];state.followups.push(v);
+ const target=recent?.topic||state.topic;
  const safety=safetyScreen(v,target);
- if(['emergency','urgent','prompt'].includes(safety.level)){
-  bubble('ai',safety.message+'\n\nYou may add details, but do not delay the recommended assessment for this chat.');
- }else if(newConcern || (detected===target && route.kind==='additional')){
-  bubble('ai',promptFor(target));
- }else if(state.additionalConcerns?.at(-1)?.description===v){
-  bubble('ai',promptFor(target));
- }else if(/\?|\b(?:should|can i|what|how|when|which|is it|could|would|doctor|avoid|self.care)\b/i.test(v)){
-  const context=[state.answers.concern,...state.followups].join(' ');
-  const guide=assess(context,extractFlags(context,state.answers),target);
-  bubble('ai',followupAnswer(v,{topic:target,context,flags:state.answers.flags,guide,safety}));
- }else{
-  const extra=state.additionalConcerns?.at(-1);
-  if(extra&&extra.topic===target&&extra.description!==v)extra.details=(extra.details?extra.details+'; ':'')+v;
-  bubble('ai',"Thanks for explaining. "+promptFor(target)+" You can also ask a different question whenever you like.");
- }
+ if(['emergency','urgent','prompt'].includes(safety.level)){bubble('ai',safety.message);if(state.report)makeReport(false);return;}
+ const combined=[state.answers.concern,state.answers.location,state.answers.symptoms,state.answers.flags,...state.followups].filter(Boolean).join(' ');
+ const guide=assess(combined,extractFlags(combined,state.answers),state.topic);
+ const response=followupAnswer(v,{topic:target,context:combined,flags:state.answers.flags,guide,safety});
+ bubble('ai',response);
  if(state.report)makeReport(false);updateProgress();persist();
 }
 function extractFlags(context,answers){
@@ -168,15 +105,15 @@ function extractFlags(context,answers){
  'open wound':(!noFlags&&s.includes('wound'))||/open wound|deep cut/.test(n),
  'fever':/\b(?:have|with|high) fever\b/.test(n)&&!/no fever/.test(n)};
 }
-function updateProgress(){$('step').textContent='OPEN CHAT';$('progressFill').style.width=(state.answers.concern?'65':'10')+'%';$('summaryBits').textContent=(state.answers.concern?'Concern: '+state.answers.concern+'\n':'')+(state.answers.onset?'Onset: '+state.answers.onset+'\n':'')+(state.answers.symptoms?'Details: '+state.answers.symptoms+'\n':'')+(state.answers.flags?'Reported warning signs: '+state.answers.flags:'')||'Your consultation summary will appear here as you chat.'}
-function makeReport(scroll=true){if(!state.answers.concern){bubble('ai','Please describe your concern first.');return}const a=state.answers;const all=[a.concern,a.location,a.symptoms,a.flags,...(state.followups||[])].join(' ');const guide=assess(all,extractFlags(all,a),state.topic);const additional=(state.additionalConcerns||[]).map(c=>({...c,screen:safetyScreen(c.description+' '+c.details,c.topic)}));const screened=safetyScreen([a.concern,a.location,a.symptoms,...(state.followups||[])].join(' '),state.topic,{flags:a.flags});const emergency=critical(a.flags)||critical(a.concern)||critical(a.symptoms)||state.followups.some(critical)||screened.level==='emergency';const warning=emergency||guide.urgent||screened.level==='prompt'||additional.some(c=>['emergency','urgent','prompt'].includes(c.screen.level)||['emergency','urgent'].includes(c.level));const hand=guide.topic==='hand';state.report={guide,additional,emergency,warning,hand,answers:{...a},followups:[...(state.followups||[])],created:new Date().toISOString()};persist();renderReport();renderDoctors();$('reportSection').classList.remove('hidden');$('handover').disabled=!$('consent').checked;if(scroll)$('reportSection').scrollIntoView({behavior:'smooth',block:'start'});}
+function updateProgress(){$('step').textContent='STEP '+Math.min(3,Math.max(1,Math.ceil(state.stage*3/(activeQuestions().length+1))))+' OF 3';$('progressFill').style.width=(10+Math.min(90,state.stage*19))+'%';$('summaryBits').textContent=(state.answers.concern?'Concern: '+state.answers.concern+'\n':'')+(state.answers.onset?'Onset: '+state.answers.onset+'\n':'')+(state.answers.symptoms?'Details: '+state.answers.symptoms+'\n':'')+(state.answers.flags?'Reported warning signs: '+state.answers.flags:'')||'Your consultation summary will appear here as you chat.'}
+function makeReport(scroll=true){if(!state.answers.concern){bubble('ai','Please describe your concern first.');return}const a=state.answers;const all=[a.concern,a.location,a.symptoms,a.flags,...(state.followups||[])].join(' ');const guide=assess(all,extractFlags(all,a),state.topic);const additional=(state.additionalConcerns||[]).map(c=>({...c,screen:safetyScreen(c.description+' '+c.details,c.topic)}));const screened=safetyScreen([a.concern,a.location,a.symptoms,...(state.followups||[])].join(' '),state.topic,{flags:a.flags});const emergency=critical(a.flags)||critical(a.concern)||critical(a.symptoms)||state.followups.some(critical)||screened.level==='emergency';const warning=emergency||guide.urgent||screened.level==='prompt'||additional.some(c=>['emergency','urgent','prompt'].includes(c.screen.level));const hand=guide.topic==='hand';state.report={guide,additional,emergency,warning,hand,answers:{...a},followups:[...(state.followups||[])],created:new Date().toISOString()};persist();renderReport();renderDoctors();$('reportSection').classList.remove('hidden');$('handover').disabled=!$('consent').checked;if(scroll)$('reportSection').scrollIntoView({behavior:'smooth',block:'start'});}
 function card(title,body,warning=false){const d=document.createElement('article');d.className='reportCard'+(warning?' warning':'');const h=document.createElement('h3');h.textContent=title;d.append(h);const p=document.createElement('p');p.textContent=body;d.append(p);return d}
 function renderReport(){const r=state.report;if(!r)return;const area=$('report');area.replaceChildren();area.append(card('01 · Patient-reported information',`Concern: ${r.answers.concern}\nOnset: ${r.answers.onset||'Not reported'}\nReported symptoms/details: ${r.answers.symptoms||'Not reported'}\nOther reported signs: ${r.answers.flags||'Not reported'}\nAdditional questions and symptoms: ${(r.followups||[]).join(' | ')||'None'}`));if(r.additional?.length)area.append(card('Additional concerns',r.additional.map(c=>c.topic+': '+c.description+(c.details?' | Details: '+c.details:'')+(c.screen.level!=='unknown'?' | '+c.screen.message:'')).join('\n\n')));area.append(card('02 · Preliminary information & uncertainty',r.guide.recognized?'Your report matches the limited offline '+r.guide.topic+' information topic. This is educational information, not a diagnosis or personalized treatment plan.':'This concern is outside the prototype’s reviewed topics. No condition-specific conclusion can be made.'));area.append(card('03 · General guidance',r.emergency?'Potential emergency warning sign reported. Contact local emergency services now. Do not wait for an online appointment.':r.guide.guidance,r.warning));area.append(card('04 · Warning signs & next step',r.emergency?'Emergency warning sign reported: immediate local emergency assistance is appropriate.':r.warning?(r.hand?'Possible fracture or significant hand injury reported. Seek prompt in-person assessment today, preferably at urgent care or an emergency department where an examination and X-ray can be arranged. Severe deformity, loss of feeling, blue/cold fingers or an open injury warrant emergency care.':'A warning sign was reported. Seek prompt in-person professional assessment. A demonstration booking is not a substitute.'):'No listed warning signs were selected, but this does not exclude a serious condition. Seek professional advice if symptoms persist, worsen or concern you.',r.warning));area.append(card('05 · Suggested specialty',r.hand?'Orthopedics or primary care may be relevant for a hand injury. This is not a clinical referral.':r.guide.topic==='mental'?'A primary care clinician or licensed mental health professional may be relevant. The demo directory does not contain a real mental health provider.':(specialties[state.topic]||specialties.general)+'. This is not a clinical referral.'));const refs=document.createElement('article');refs.className='reportCard';refs.innerHTML='<h3>06 · Medical references</h3><p>External sources require an internet connection. Links are for further reading; no live database retrieval occurs.</p>';const ul=document.createElement('ul');const sources=[...r.guide.sources,['MedlinePlus — Health Topics','https://medlineplus.gov/healthtopics.html'],['PubMed — Biomedical literature search','https://pubmed.ncbi.nlm.nih.gov/']];sources.forEach(([label,url])=>{const li=document.createElement('li'),link=document.createElement('a');link.textContent=label;link.href=url;link.target='_blank';link.rel='noopener noreferrer';li.append(link);ul.append(li)});refs.append(ul);area.append(refs);$('matchReason').textContent=r.hand?'Suggested demo directory category: Orthopedics or general practice, based on a reported hand injury.':r.guide.topic==='mental'?'A mental health professional or general practitioner may be relevant; no mental health specialist is available in this fictional directory.':'Suggested demo directory category: General practice. Not a clinical referral.';}
 function renderDoctors(){const root=$('doctors');root.replaceChildren();const order=state.report?.hand?[doctors[1],doctors[0],doctors[2]]:doctors;order.forEach(d=>{const el=document.createElement('article');el.className='doctor';el.innerHTML=`<div class="docTop"><div class="avatar">${d.initials}</div><div><h3>${esc(d.name)}</h3><small>${esc(d.role)}</small></div></div><div class="meta">◈ ${esc(d.format)}<br>◎ ${esc(d.languages)}<br>▦ Fictional demonstration schedule</div>`;const b=document.createElement('button');b.className='btn';b.textContent='View demo availability ↗';b.onclick=()=>openBooking(d);el.append(b);root.append(el)})}
 function openBooking(d){selectedDoctor=d;selectedTime=null;selectedDate=null;const p=$('bookingPanel');p.classList.remove('hidden');p.replaceChildren();const h=document.createElement('h3');h.textContent='Reserve a fictional consultation with '+d.name;p.append(h);const info=document.createElement('p');info.textContent='Demonstration only. No real clinician, appointment, payment or video call.';p.append(info);const dates=document.createElement('div');dates.className='dateSlots';for(let i=1;i<=4;i++){const date=new Date();date.setDate(date.getDate()+i);const label=date.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});const b=document.createElement('button');b.className='slot';b.textContent=label;b.onclick=()=>{selectedDate=label;dates.querySelectorAll('button').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');updateBookingButton()};dates.append(b)}p.append(dates);const times=document.createElement('div');times.className='dateSlots';d.slots.forEach(t=>{const b=document.createElement('button');b.className='slot';b.textContent=t;b.onclick=()=>{selectedTime=t;times.querySelectorAll('button').forEach(x=>x.classList.remove('selected'));b.classList.add('selected');updateBookingButton()};times.append(b)});p.append(times);const book=document.createElement('button');book.id='confirmBooking';book.className='btn';book.textContent='Confirm fictional appointment';book.disabled=true;book.onclick=()=>{state.booking={doctor:d.name,date:selectedDate,time:selectedTime,reference:'DEMO-'+Date.now().toString().slice(-6)};persist();const notice=document.createElement('p');notice.style.color='#158261';notice.textContent=`✓ Fictional reservation confirmed: ${d.name} · ${selectedDate} at ${selectedTime}. Reference ${state.booking.reference}. Saved only in this browser.`;p.append(notice);book.disabled=true};p.append(book);p.scrollIntoView({behavior:'smooth',block:'center'})}
 function updateBookingButton(){const b=$('confirmBooking');if(b)b.disabled=!selectedDate||!selectedTime}
 function summaryText(){const r=state.report;if(!r)return 'No report';return `AI CLINIC · FICTIONAL DEMONSTRATION\nNot a medical diagnosis or clinical record\n\nFictional patient: ${$('alias').value||'Demo patient'}\nConcern: ${r.answers.concern}\nOnset: ${r.answers.onset||'Not reported'}\nReported symptoms/details: ${r.answers.symptoms||'Not reported'}\nWarning signs: ${r.answers.flags||'Not reported'}\nAdditional questions and symptoms: ${(r.followups||[]).join(' | ')||'None'}\n\nGeneral guidance: ${r.emergency?'Seek immediate local emergency assistance.':r.guide.guidance}\nSuggested directory category: ${r.hand?'Orthopedics or general practice':'General practice'}\n\nReferences:\n${r.guide.sources.map(s=>s.join(' — ')).join('\n')}\n\n${state.booking?`FICTIONAL booking: ${state.booking.doctor}, ${state.booking.date}, ${state.booking.time}`:''}\nNo clinical validation or real clinician connection.`}
-$('chatForm').onsubmit=e=>{e.preventDefault();receive($('messageInput').value)};$('analyse').onclick=makeReport;$('consent').onchange=()=>{$('handover').disabled=!$('consent').checked||!state.report};$('handover').onclick=()=>{if(!$('consent').checked||!state.report)return;state.handed=true;persist();$('handoverStatus').textContent=navigator.onLine?'Simulated handover completed in this browser. No server transmission.':'Offline: simulated handover queued locally; no server transmission.';$('inboxText').textContent='Fictional consultation received: '+($('alias').value||'Demo patient')+' — '+state.answers.concern+'. Human review required.'};$('download').onclick=()=>{const blob=new Blob([summaryText()],{type:'text/plain'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AI-Clinic-Demo-Summary.txt';a.click();URL.revokeObjectURL(url)};$('reset').onclick=()=>{if(!confirm('Delete this browser’s fictional demonstration data?'))return;localStorage.removeItem(KEY);location.reload()};$('photo').onchange=e=>{const f=e.target.files?.[0],area=$('preview');area.replaceChildren();if(!f)return;if(!f.type.startsWith('image/')||f.size>5e6){area.textContent='Choose an image smaller than 5 MB.';return}const url=URL.createObjectURL(f),img=document.createElement('img');img.alt='Local preview only; not analyzed';img.src=url;img.onload=()=>URL.revokeObjectURL(url);area.append(img);const note=document.createElement('p');note.textContent='Preview only. No AI image assessment, storage or upload.';area.append(note)};function network(){$('net').textContent=navigator.onLine?'● Online':'○ Offline';$('net').style.color=navigator.onLine?'#168265':'#a86b20'}window.addEventListener('online',network);window.addEventListener('offline',network);$('language').onchange=e=>{if(e.target.value==='kk')bubble('ai','Қазақша нұсқасы: өз шағымыңызды жазыңыз. Бұл медициналық диагноз емес. Толық клиникалық нұсқаулық әзірге ағылшын тілінде берілген.');else bubble('ai','English selected. Continue your consultation below.')};try{const s=JSON.parse(localStorage.getItem(KEY));if(s?.messages&&Array.isArray(s.messages)){state=s;state.followups=state.followups||[];state.topic=state.topic||topicForConcern(state.answers?.concern);state.activeTopic=state.activeTopic||state.topic}}catch{}if(!state.messages.length)bubble('ai','Hello. I’m your AI Clinic consultation assistant. I can help organize your concern and show general reference-based information. I cannot diagnose conditions or interpret photographs.\n\nTo begin, what is troubling you today? Choose a suggested topic below or type freely. Live conversational answers require the separately deployed AI backend.');else renderMessages();updateProgress();renderDoctors();state.additionalConcerns=state.additionalConcerns||[];if(state.report){renderReport();$('reportSection').classList.remove('hidden')}if(state.handed)$('inboxText').textContent='A fictional consultation was shared in this browser. Human review required.';network();if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
+$('chatForm').onsubmit=e=>{e.preventDefault();receive($('messageInput').value)};$('analyse').onclick=makeReport;$('consent').onchange=()=>{$('handover').disabled=!$('consent').checked||!state.report};$('handover').onclick=()=>{if(!$('consent').checked||!state.report)return;state.handed=true;persist();$('handoverStatus').textContent=navigator.onLine?'Simulated handover completed in this browser. No server transmission.':'Offline: simulated handover queued locally; no server transmission.';$('inboxText').textContent='Fictional consultation received: '+($('alias').value||'Demo patient')+' — '+state.answers.concern+'. Human review required.'};$('download').onclick=()=>{const blob=new Blob([summaryText()],{type:'text/plain'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='AI-Clinic-Demo-Summary.txt';a.click();URL.revokeObjectURL(url)};$('reset').onclick=()=>{if(!confirm('Delete this browser’s fictional demonstration data?'))return;localStorage.removeItem(KEY);location.reload()};$('photo').onchange=e=>{const f=e.target.files?.[0],area=$('preview');area.replaceChildren();if(!f)return;if(!f.type.startsWith('image/')||f.size>5e6){area.textContent='Choose an image smaller than 5 MB.';return}const url=URL.createObjectURL(f),img=document.createElement('img');img.alt='Local preview only; not analyzed';img.src=url;img.onload=()=>URL.revokeObjectURL(url);area.append(img);const note=document.createElement('p');note.textContent='Preview only. No AI image assessment, storage or upload.';area.append(note)};function network(){$('net').textContent=navigator.onLine?'● Online':'○ Offline';$('net').style.color=navigator.onLine?'#168265':'#a86b20'}window.addEventListener('online',network);window.addEventListener('offline',network);$('language').onchange=e=>{if(e.target.value==='kk')bubble('ai','Қазақша нұсқасы: өз шағымыңызды жазыңыз. Бұл медициналық диагноз емес. Толық клиникалық нұсқаулық әзірге ағылшын тілінде берілген.');else bubble('ai','English selected. Continue your consultation below.')};try{const s=JSON.parse(localStorage.getItem(KEY));if(s?.messages&&Array.isArray(s.messages)){state=s;state.followups=state.followups||[];state.topic=state.topic||topicForConcern(state.answers?.concern)}}catch{}if(!state.messages.length)bubble('ai','Hello. I’m your AI Clinic consultation assistant. I can help organize your concern and show general reference-based information. I cannot diagnose conditions or interpret photographs.\n\nTo begin, what is troubling you today?');else renderMessages();updateProgress();renderDoctors();state.additionalConcerns=state.additionalConcerns||[];if(state.report){renderReport();$('reportSection').classList.remove('hidden')}if(state.handed)$('inboxText').textContent='A fictional consultation was shared in this browser. Human review required.';network();if('serviceWorker'in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
 
 // Progressive enhancement: fictional local profile, recording, accessibility and booking shortcut.
 const accountDialog=$('accountDialog'),accessDialog=$('accessDialog');

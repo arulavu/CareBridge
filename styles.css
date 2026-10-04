@@ -8,7 +8,3 @@
 .concernResults{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:22px 0}.concernItem{display:flex;flex-direction:column;align-items:flex-start;gap:8px;border:1px solid #dbe8f6;border-radius:15px;padding:16px;background:#fff}.concernItem small{color:#52718f}.concernItem a{font-size:.88rem}
 
 .followupActions{display:flex;flex-wrap:wrap;gap:8px;padding:10px 15px 4px}.followupActions button{border:1px solid #bad3ed;border-radius:999px;padding:8px 12px;background:#f4f9ff;color:#194e8b;cursor:pointer;font:inherit;font-size:.82rem}.followupActions button:hover,.followupActions button:focus-visible{background:#dcecff;outline:2px solid #589be3;outline-offset:1px}.chatContinue{font-size:.78rem;color:#526b82;padding:0 15px 6px;margin:0}
-
-.quickChoices{display:flex;flex-wrap:wrap;gap:8px;padding:12px 2px 18px;max-width:820px;margin:0 auto}
-.choiceChip{border:1px solid #b9d7f5;background:#f1f8ff;color:#164a80;border-radius:22px;padding:9px 14px;font:inherit;font-size:.86rem;cursor:pointer}
-.choiceChip:hover,.choiceChip:focus-visible{background:#dceeff;outline:2px solid #85baf1;outline-offset:1px}
