@@ -1,3 +1,4 @@
+import {messageIntent,socialResponse} from './conversation.js';
 import {topicForConcern,questionsFor,safetyScreen,specialties} from './triage.js';
 import {assess} from './guidance.js';
 const $=id=>document.getElementById(id);const KEY='ai_clinic_worldbank_demo_v3';
@@ -56,25 +57,24 @@ function persist(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch{}}
 function bubble(role,message){state.messages.push({role,message});renderMessages();persist()}
 function renderMessages(){const area=$('messages');area.replaceChildren();state.messages.forEach(m=>{const d=document.createElement('div');d.className='bubble '+m.role;d.textContent=m.message;area.append(d)});area.scrollTop=area.scrollHeight;const quick=$('quickChoices');if(quick)quick.remove();if(state.stage>0&&state.stage<=activeQuestions().length){const row=document.createElement('div');row.className='quick';row.id='quickChoices';activeQuestions()[state.stage-1].choices.forEach(c=>{const b=document.createElement('button');b.textContent=c;b.type='button';b.onclick=()=>receive(c);row.append(b)});area.after(row)}}
 function ask(){if(state.stage<=activeQuestions().length){bubble('ai',activeQuestions()[state.stage-1].q)}else{bubble('ai','Thank you. Your preliminary report is ready. Select “Analyse consultation” to view general guidance, source references and demonstration specialists.')}}
-function receive(value){const v=value.trim();if(!v)return;if(state.stage===0){state.answers.concern=v;state.topic=topicForConcern(v);state.stage=1;bubble('user',v);const isEmergency=critical(v);if(isEmergency)bubble('ai','Your description may include an emergency warning sign. Seek immediate local emergency assistance now; do not wait for this demonstration.');const early=safetyScreen(v,state.topic);if(early.level!=='unknown'&&!isEmergency)bubble('ai',early.message);ask()}else if(state.stage<=activeQuestions().length){state.answers[activeQuestions()[state.stage-1].key]=v;state.stage++;bubble('user',v);const safety=safetyScreen(v,state.topic,{flags:state.answers.flags});if(safety.level!=='unknown')bubble('ai',safety.message);ask()}else handleFollowup(v);$('messageInput').value='';updateProgress();persist()}
+function receive(value){const v=value.trim();if(!v)return;if(state.stage===0){if(messageIntent(v)==='social'){bubble('user',v);bubble('ai','Hello! What health question or concern would you like help organizing today?');$('messageInput').value='';return;}state.answers.concern=v;state.topic=topicForConcern(v);state.stage=1;bubble('user',v);const isEmergency=critical(v);if(isEmergency)bubble('ai','Your description may include an emergency warning sign. Seek immediate local emergency assistance now; do not wait for this demonstration.');const early=safetyScreen(v,state.topic);if(early.level!=='unknown'&&!isEmergency)bubble('ai',early.message);ask()}else if(state.stage<=activeQuestions().length){state.answers[activeQuestions()[state.stage-1].key]=v;state.stage++;bubble('user',v);const safety=safetyScreen(v,state.topic,{flags:state.answers.flags});if(safety.level!=='unknown')bubble('ai',safety.message);ask()}else handleFollowup(v);$('messageInput').value='';updateProgress();persist()}
 // After the initial intake, accept multiple additional symptoms and questions in the same session.
 // Answers are from a narrow reviewed educational library, never generated diagnoses.
 function handleFollowup(v){
- state.followups=state.followups||[];
- state.followups.push(v);
- bubble('user',v);
- const context=[state.answers.concern,state.answers.symptoms,...state.followups].join(' ');
- const guide=assess(context,extractFlags(context,state.answers),topicFor(v)==='general'?state.topic:topicFor(v));
- const q=v.toLowerCase();
- const asksCare=/what|how|should|recommend|suggest|avoid|do now|help|cold|ice|compress|move|rest|care|treat|advice|не істе|болмай|можно|делать|нельзя/.test(q);
- if(critical(v)){bubble('ai','You may have described an urgent concern. If you are in immediate danger, have chest pain, difficulty breathing, or risk of harming yourself, contact local emergency or crisis services now. This demo cannot assess urgency.');}
- else if(guide.urgent){bubble('ai',guide.guidance+'\n\nPlease arrange professional assessment; a demo booking is not medical care.');}
- else if(guide.recognized && asksCare){bubble('ai',guide.guidance+'\n\nRelevant sources are linked in your report. These are general educational steps, not a personal treatment plan.');}
- else if(guide.recognized){bubble('ai',guide.guidance+'\n\nYou can ask follow-up questions or select Analyse consultation to refresh your report.');}
- else{bubble('ai',guide.guidance+'\n\nI saved your question for a clinician. You can keep adding details or refresh your report.');}
- if(state.report)makeReport(false);
- bubble('ai','You can keep asking questions or add new symptoms. I will update the report; this is not a diagnosis.');
- updateProgress();persist();
+ const intent=messageIntent(v);bubble('user',v);
+ if(intent==='social'){bubble('ai',socialResponse(v));return;}
+ if(intent==='correction'){bubble('ai',"You're right—I misunderstood. A greeting or correction isn't a symptom. Would you like to continue your earlier concern, ask a different question, or start a new consultation?");return;}
+ if(intent==='new-topic'){state.answers={};state.followups=[];state.stage=0;state.topic='general';state.report=null;$('reportSection').classList.add('hidden');bubble('ai','Of course. What new concern or question would you like to discuss?');updateProgress();persist();return;}
+ const incoming=topicForConcern(v);
+ const isNewTopic=incoming!=='general'&&incoming!==state.topic&&/(?:i (?:have|feel|think)|my |new symptom|also have|what about)/i.test(v);
+ if(isNewTopic){state.answers={concern:v};state.followups=[];state.topic=incoming;state.stage=1;state.report=null;$('reportSection').classList.add('hidden');const safety=safetyScreen(v,incoming);if(safety.level!=='unknown')bubble('ai',safety.message);bubble('ai','This sounds like a different concern. I will ask relevant questions rather than reuse your previous answers.');ask();updateProgress();persist();return;}
+ state.followups=state.followups||[];state.followups.push(v);
+ const safety=safetyScreen(v,state.topic,{flags:state.answers.flags});
+ if(safety.level!=='unknown'){bubble('ai',safety.message);if(state.report)makeReport(false);return;}
+ const asksCare=/what|how|should|recommend|suggest|avoid|do now|help|cold|ice|compress|move|rest|care|treat|advice|doctor|hospital|не істе|болмай|можно|делать|нельзя/i.test(v);
+ if(!asksCare)bubble('ai','Thanks for adding that. Is this a new symptom or part of your earlier concern? Please describe when it began, where it occurs, and whether it is getting worse. I cannot determine whether home care is safe from this information alone.');
+ else{const guide=assess([state.answers.concern,state.answers.symptoms,...state.followups].join(' '),extractFlags(v,state.answers),state.topic);if(guide.urgent)bubble('ai',guide.guidance+'\n\nPlease seek the assessment indicated above rather than relying on this demonstration.');else bubble('ai','I understand your question. Could you tell me which symptom you mean, how severe it is, how long it has lasted, and whether you have any new or worsening symptoms? I cannot determine whether self-care is safe without appropriate assessment.');}
+ if(state.report)makeReport(false);updateProgress();persist();
 }
 function extractFlags(context,answers){
  const n=context.toLowerCase(), s=(answers.flags||'').toLowerCase(), sev=(answers.severity||'').toLowerCase();const noFlags=/^(none|none of these|none reported|no|i am safe|not applicable)$/.test(s.trim());
