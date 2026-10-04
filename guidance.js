@@ -1,5 +1,12 @@
 // Small, curated, educational offline guidance. Not clinical decision support.
 export const SOURCES={
+ limb:[['NHS — Leg pain','https://www.nhs.uk/symptoms/leg-pain/'],['MedlinePlus — Injuries','https://medlineplus.gov/woundsandinjuries.html']],
+ abdominal:[['MedlinePlus — Abdominal Pain','https://medlineplus.gov/abdominalpain.html']],
+ allergy:[['MedlinePlus — Allergy','https://medlineplus.gov/allergy.html']],
+ poisoning:[['MedlinePlus — Poisoning','https://medlineplus.gov/poisoning.html']],
+ chest:[['MedlinePlus — Chest Pain','https://medlineplus.gov/chestpain.html']],
+ neurological:[['MedlinePlus — Headache','https://medlineplus.gov/headache.html']],
+ urinary:[['MedlinePlus — Urinary Tract Infections','https://medlineplus.gov/urinarytractinfections.html']],
  pain:[['MedlinePlus — Pain','https://medlineplus.gov/pain.html']],
  digestive:[['MedlinePlus — Digestive Diseases','https://medlineplus.gov/digestivediseases.html']],
  skin:[['MedlinePlus — Skin Conditions','https://medlineplus.gov/skinconditions.html']],
@@ -10,6 +17,13 @@ export const SOURCES={
  general:[['MedlinePlus — Health topics','https://medlineplus.gov/healthtopics.html']]
 };
 const guides={
+ limb:'Describe the exact location, injury history, ability to walk or move, and any swelling or numbness. Pain after trauma or inability to bear weight needs professional assessment; new severe one-sided swelling or a cold, pale limb needs urgent assessment.',
+ abdominal:'Abdominal pain has many possible causes. Describe its location, onset, intensity, bowel and urinary changes, medicines and pregnancy possibility where relevant. Severe sudden pain, fainting or bleeding requires urgent assessment. Do not assume self-care is appropriate.',
+ allergy:'A mild rash can have several causes. Identify any suspected exposure and avoid it if safe. Difficulty breathing, throat or tongue swelling or fainting may signal a life-threatening reaction: contact emergency services immediately.',
+ poisoning:'For suspected poisoning, contact a local poison-control service or emergency service immediately. Do not induce vomiting or try home antidotes. Keep product details available if safe.',
+ chest:'Chest symptoms can be serious and cannot be assessed safely here. New or unexplained chest pain, especially with breathlessness, faintness or sweating, requires urgent medical assessment.',
+ neurological:'Sudden severe headache, new weakness, speech difficulty or confusion requires emergency help. For other neurological concerns, seek medical assessment when new, persistent or worsening.',
+ urinary:'Urinary symptoms may need testing and treatment. Fever with flank pain, inability to pass urine or symptoms during pregnancy warrant prompt professional assessment.',
  pain:'For unexplained pain, avoid activities that clearly worsen it and document its location, duration and severity. Because causes vary, arrange professional assessment for persistent, severe or worsening pain. Seek urgent help for severe or rapidly worsening symptoms.',
  digestive:'For mild digestive discomfort, consider adequate fluids and note food, medicines and timing. Do not assume the cause. Seek professional assessment for persistent or worsening symptoms; severe abdominal pain, bloody vomit or black stools need urgent assessment.',
  skin:'For an unfamiliar skin concern, avoid irritating products and note any new medications or exposures. Seek assessment if it spreads, becomes painful, develops fever or persists. Rapid swelling of lips or tongue or breathing trouble requires emergency help.',
@@ -22,7 +36,7 @@ const guides={
 export function assess(notes,answers={},selectedTopic){
  const n=String(notes||'').toLowerCase();
  const hand=/hand|finger|wrist|қол|саусақ|кисть|палец|запясть/.test(n)&&/hit|hurt|injur|fell|fall|pain|swoll|break|broke|broken|fractur|удар|болит|травм|ауыр|соқ/.test(n);
- const topic=hand?'hand':selectedTopic==='injury'?'pain':selectedTopic&&SOURCES[selectedTopic]?selectedTopic:'general';
+ const topic=selectedTopic&&SOURCES[selectedTopic]?selectedTopic:hand?'hand':'general';
  const urgent=/(?:^|[.!?;]\s*)(?:i have |i am experiencing )?(?:chest pain|difficulty breathing|trouble breathing|severe bleeding)|can't breathe|cannot breathe|unconscious|suicid|self.harm|want to die|hurt myself|i need urgent help/i.test(n)&&!/^(?:no|not|without) (?:chest pain|difficulty breathing|trouble breathing)/.test(n.trim());
  const suspectedFracture=topic==='hand'&&/(?:afraid|think|might|may|possible|suspect|could).{0,35}(?:broken|fractur|broke)|(?:broken|fractur|broke).{0,35}(?:hand|finger|wrist)|(?:hand|finger|wrist).{0,35}(?:broken|fractur|broke)/.test(n);
  const flags=topic==='hand'?['numbness','cannot move','severe pain','changed shape','blue or pale','open wound'].filter(k=>answers[k]):[];
